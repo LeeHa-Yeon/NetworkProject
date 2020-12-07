@@ -19,14 +19,14 @@ char *EXIT_STRING = "exit";
 char *CONNECT_STRING = "Hi , Connected to the game.\n";
 char *START_STRING = "Let's start the game \n\n\t------------------------------------------------------\n";
 
-char *INPUT_STRING= "\n\t\t\t Please enter a number \n\t------------------------------------------------------\n ";
-char *WAIT_STRING = "\n\t\t\t\t  Wait \n\t------------------------------------------------------\n";
+char *INPUT_STRING= "\t\t\t Please enter a number \n↓----   ------------------------------------------------------ ";
+char *WAIT_STRING = "\t\t\t\t  Wait \n\t------------------------------------------------------\n";
 
 
 char *END = "\n 게임이 끝이 났습니다.  \n";
-char *WIN = "\n 게임에서 승리하셨습니다. 축하드립니다. \n";
-char *LOSE = "\n 게임에서 졌습니다. 다음기회를 노려보세요 \n";
-char *WRONG_TURN_STRING = " *WARNING※ It's not your turn \n";
+char *WIN = "게임에서 승리하셨습니다.\n";
+char *LOSE = "게임에서 졌습니다. \n";
+char *WRONG_TURN_STRING = " *WARNING※ \n\t\t\t :  It's not your turn \n\t------------------------------------------------------\n \n";
 
 int maxfdp1;
 int num_chat = 0;
@@ -59,7 +59,8 @@ int main(int argc, char *argv[]) {
         char buf[MAXLINE];
         int i,j,nbyte,k;
         int accp_sock, clilen, addrlen;
-
+	char user_name[MAXLINE] = "tnddls";
+	char user_name1[MAXLINE] = "gkdus";
 
         if(argc != 2) {
                 printf("사용법 : %s port\n", argv[0]);
@@ -94,8 +95,12 @@ int main(int argc, char *argv[]) {
 			//printf("aa : %s\n ",recv_buf);
         	        //printf("%d , %d,  %d, %d \n",nbyte ,strlen(recv_buf),clisock_list[i],i);
                         addClient(accp_sock, &cliaddr);
-			printf("%s가 입장하였습니다..\n", player);
-
+			if(num_chat == 1){
+			printf("%s가 입장하였습니다..\n", user_name);
+			}
+			if(num_chat == 2){
+				printf("%s가 입장하였습니다..\n", user_name1);
+			}
 			// 클라이언트에 메세지를 전달해줌
                         send(accp_sock, CONNECT_STRING, strlen(CONNECT_STRING), 0);
 
@@ -108,7 +113,7 @@ int main(int argc, char *argv[]) {
                                 send(clisock_list[0], INPUT_STRING, strlen(INPUT_STRING), 0);
                                 send(clisock_list[1], WAIT_STRING, strlen(WAIT_STRING), 0);
                                 is_GameStart = 1;
-                                printf("\n\t\t\t 게임 시작할 준비가 완료되었습니다.\n");
+                                printf("\n\t\t    게임 시작할 준비가 완료되었습니다.\n");
                         }
                 }
                 for(i = 0; i<num_chat; i++) {
@@ -130,11 +135,15 @@ puts(" -------------------------------------------------------------------------
 fprintf(stderr, "\033[97m");
 }
 
-void game_play(int i){
-        int k, j, nbyte, num;
+void game_play(int i){ 
+	char* tmp2 = NULL;
+	char aa[150] = " ";
+	int df[MAXLINE];
+        int k, j, nbyte, num,f;
         int present;
+	char numBuf[150];
         char inputBuf[150];
-        char resultBuf[150];
+        char resultBuf[MAXLINE];
         char recv_buf[MAXLINE];
         char *player, *next_token;
 
@@ -158,11 +167,12 @@ void game_play(int i){
         num = atoi(next_token);
 
 	if(turn == i){
-		printf("\n  aa : %s\n ",recv_buf);
-		printf("%d , %d,  %d, %d \n",nbyte ,strlen(recv_buf),clisock_list[i],i);
+//		printf("\n  aa : %s\n ",recv_buf);
+//		printf("%d , %d,  %d, %d \n",nbyte ,strlen(recv_buf),clisock_list[i],i);
                 if(num > 0 && num < 4) {
-                        printf("*****************************************************\n");
-                        printf(" %s 가 부른 숫자 리스트 :  ",player);
+			fprintf(stderr, "\033[33m");
+                        printf("\n\t ------------------------------------------------------------ \n");
+                        printf("\n\t\t\t사용자%s 숫자 :  ",player);
                         for( present=total+1; present<=total+num; present++){
                                 printf(" %d", present);
                                 if(present!=total+num)
@@ -170,26 +180,41 @@ void game_play(int i){
                         }
                         puts("");
                         total += num;
-                        printf("현재까지 3 1 게임의 마지막 수 => %d 입니다\n", total);
+                        printf("\t\t\t   ✓ 현재 마지막 숫자 ► %d \n", total);
                         if(total >= 31) {
                                 for(k = 0 ; k<2; k++){
+					fprintf(stderr, "\033[97m");
                                         if(i==k)
                                                 send(clisock_list[k],LOSE,strlen(LOSE), 0);
                                         else
                                                 send(clisock_list[k],WIN,strlen(WIN), 0);
                                 }
-                                printf("최종 : %s가 졌습니다.\n",player);
+				fprintf(stderr, "\033[97m");
+				printf("\t ------------------------------------------------------------ \n");
+                                printf("\t\t\t 결과 : %s가 졌습니다.\n",player);
                                 is_GameStart = 0;
                         }
                         else{
-                                sprintf(inputBuf, "%s 님이 %d를 선택하셨습니다. 현재 숫자[%d]\n", player, num, total);
+                                
+				//sprintf(inputBuf, "%s ▶︎ 숫자 %d개를 선택. \n\t\t\t :  현재 숫자[%d]\n", player, num, total);
+				
+			//	sprintf(inputBuf, "%s ▶︎ 숫자 %d개를 선택. \n ", player, num);
+				for(f=total-num+1; f < total+1; f++){ 
+					sprintf(numBuf,"%d. ", f);
+					tmp2 = strcat(aa,numBuf);
+				}
+				sprintf(inputBuf, "%s ▶︎ 숫자 %d개를 선택. \n\t\t\t :   현재 숫자[ %s] \n ", player, num,tmp2);
+			//	sprintf(numBuf, "%d",df); 
+			//	send(clisock_list[k], numBuf, strlen(numBuf),0);
+				
+				printf("\n\t ------------------------------------------------------------");
                                 for(k = 0; k<2; k++)
                                         if(i==k){
-                                                sprintf(resultBuf, "%s \n 차례를 기다리세요....", inputBuf);
+                                                sprintf(resultBuf, "%s \n\n\t------------------------------------------------------\n\t\t\t 차례를 기다리세요.\n\t------------------------------------------------------\n", inputBuf);
                                                 send(clisock_list[k], resultBuf,strlen(resultBuf), 0);
                                         }
                                         else{
-                                                sprintf(resultBuf, "%s \n 당신의 차례입니다.....:)",inputBuf);
+                                                sprintf(resultBuf, "%s \n\n\t------------------------------------------------------\n\t\t\t 숫자를 입력하세요.\n↓----   ------------------------------------------------------",inputBuf);
                                                 send(clisock_list[k], resultBuf, strlen(resultBuf),0);
                                         }
                                         turn = (i+1)%2;
