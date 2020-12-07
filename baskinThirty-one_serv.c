@@ -12,16 +12,21 @@
 #define MAXLINE 511
 #define MAX_SOCK 1024
 
-char *EXIT_STRING = "exit";
-char *START_STRING = "Connected to Game\n";
 
-char *FIRST_STRING= "PUSH 입력 : ";
-char *SECOND_STRING = "Wait 잠시만 기다려주세요 \n******************************************\n";
-char *START = "게임을 시작하겠습니다.\n ㄴ숫자를 1~3 중에 입력해주세요\n******************************************\n";
-char *END = "\n******************************************\n게임이 끝났습니다. 수고하셨습니다. ^_^ \n";
-char *WIN = "\n******************************************\n이겼습니다. 축하드립니다 *_* \n";
-char *LOSE = "\n******************************************\n졌습니다. 다음 기회를 노려보세요 ㅠ_ㅠ \n";
-char *WRONG_TURN_STRING = " ※경고※ 당신의 차례가 아닙니다 \n";
+char *TEST = " \n \t\t\t : ";
+
+char *EXIT_STRING = "exit";
+char *CONNECT_STRING = "Hi , Connected to the game.\n";
+char *START_STRING = "Let's start the game \n\n\t------------------------------------------------------\n";
+
+char *INPUT_STRING= "\n\t\t\t Please enter a number \n\t------------------------------------------------------\n ";
+char *WAIT_STRING = "\n\t\t\t\t  Wait \n\t------------------------------------------------------\n";
+
+
+char *END = "\n 게임이 끝이 났습니다.  \n";
+char *WIN = "\n 게임에서 승리하셨습니다. 축하드립니다. \n";
+char *LOSE = "\n 게임에서 졌습니다. 다음기회를 노려보세요 \n";
+char *WRONG_TURN_STRING = " *WARNING※ It's not your turn \n";
 
 int maxfdp1;
 int num_chat = 0;
@@ -30,10 +35,11 @@ int listen_sock;
 
 int is_GameStart = 0;
 int turn = 0;
+int trun = 1;
 int total = 0;
 char input_error[30];
 char test[30];
-void rule_print();
+void GameRule();
 void game_play(int i);
 
 void addClient(int s, struct sockaddr_in *newcliaddr);
@@ -47,10 +53,13 @@ void errquit(char *mesg) {
 }
 
 int main(int argc, char *argv[]) {
+	char *player;
+	char recv_buf[MAXLINE];
         struct sockaddr_in cliaddr;
         char buf[MAXLINE];
         int i,j,nbyte,k;
         int accp_sock, clilen, addrlen;
+
 
         if(argc != 2) {
                 printf("사용법 : %s port\n", argv[0]);
@@ -64,7 +73,10 @@ int main(int argc, char *argv[]) {
         if(set_nonblock(listen_sock) == -1) {
                 errquit("set_nonblock fail");
         }
-        rule_print();
+
+        GameRule();
+
+
         while(1) {
                 addrlen = sizeof(cliaddr);
                 accp_sock = accept(listen_sock, (struct sockaddr *)&cliaddr,&addrlen);
@@ -76,18 +88,27 @@ int main(int argc, char *argv[]) {
                         if(is_nonblock(accp_sock) != 0 &&set_nonblock(accp_sock) < 0) {
                                 errquit("set_nonblock fail");
                         }
+			// 서버에 새로운 참가자 등장을 알림
+			//nbyte = recv(clisock_list[num_chat],recv_buf,MAXLINE,0);
+        		//player = strtok(recv_buf,":");
+			//printf("aa : %s\n ",recv_buf);
+        	        //printf("%d , %d,  %d, %d \n",nbyte ,strlen(recv_buf),clisock_list[i],i);
                         addClient(accp_sock, &cliaddr);
-                        send(accp_sock, START_STRING, strlen(START_STRING), 0);
-                        printf("%d번째 사용자 추가.\n", num_chat);
+			printf("%s가 입장하였습니다..\n", player);
+
+			// 클라이언트에 메세지를 전달해줌
+                        send(accp_sock, CONNECT_STRING, strlen(CONNECT_STRING), 0);
 
                         if(num_chat == 2) {
-                                for(k = 0; k < num_chat; k++) {
-                                        send(clisock_list[k], START,strlen(START), 0);
-                                }
-                                send(clisock_list[0], FIRST_STRING, strlen(FIRST_STRING), 0);
-                                send(clisock_list[1], SECOND_STRING, strlen(SECOND_STRING), 0);
+                                //for(k = 0; k < num_chat; k++) {
+                                send(clisock_list[0], START_STRING,strlen(START_STRING), 0);
+				send(clisock_list[1],TEST,strlen(TEST),0);
+				send(clisock_list[1], START_STRING,strlen(START_STRING), 0);                                
+//}
+                                send(clisock_list[0], INPUT_STRING, strlen(INPUT_STRING), 0);
+                                send(clisock_list[1], WAIT_STRING, strlen(WAIT_STRING), 0);
                                 is_GameStart = 1;
-                                printf("READY !!! \n");
+                                printf("\n\t\t\t 게임 시작할 준비가 완료되었습니다.\n");
                         }
                 }
                 for(i = 0; i<num_chat; i++) {
@@ -97,10 +118,16 @@ int main(int argc, char *argv[]) {
         }
 }
 
-void rule_print(){
-        printf(" ==============================================================================\n");
-        printf(" < 베스킨 라빈스 31 게임 rule > \n 1. 1부터 시작해서 연속된 숫자로 부른다. \n 2. 건너뛰지 않고 숫자를 3개까지 이어서 해야한다. \n 3. 상대방이 마지막 부른 숫자에 이어서 똑같은 규칙대로 숫자를 이어 부른다. \n 4. 31을 먼저 부르는 사람이 진다. \n " );
-printf(" ==============================================================================\n");
+void GameRule(){
+puts("");
+fprintf(stderr, "\033[32m");
+puts(" ----------------------------------------------------------------------------");
+puts("⎢\t\t\t < BaskinRobbins Thirty One Game Rule >              ⎜\n⎜\t\t\t\t\t\t\t\t\t     ⎜");
+puts("⎢\t 1. 1부터 시작해서 숫자를 연속으로 부른다                            ⎜");
+puts("⎢\t 2. 건너뛰지 않고 숫자를 3개까지 부를 수 있다                        ⎜");
+puts("⎢\t 3. 상대방이 마지막 부른 숫자에 이어서 31을 부르는 사람이 진다       ⎜");
+puts(" ----------------------------------------------------------------------------");
+fprintf(stderr, "\033[97m");
 }
 
 void game_play(int i){
@@ -110,6 +137,9 @@ void game_play(int i){
         char resultBuf[150];
         char recv_buf[MAXLINE];
         char *player, *next_token;
+
+
+		
 
         nbyte = recv(clisock_list[i], recv_buf, MAXLINE, 0);
         if(nbyte == 0) {
@@ -126,7 +156,10 @@ void game_play(int i){
         player = strtok(recv_buf,":");
         next_token = strtok(NULL, " ");
         num = atoi(next_token);
-        if(turn == i){
+
+	if(turn == i){
+		printf("\n  aa : %s\n ",recv_buf);
+		printf("%d , %d,  %d, %d \n",nbyte ,strlen(recv_buf),clisock_list[i],i);
                 if(num > 0 && num < 4) {
                         printf("*****************************************************\n");
                         printf(" %s 가 부른 숫자 리스트 :  ",player);
@@ -177,8 +210,8 @@ void game_play(int i){
 void addClient(int s, struct sockaddr_in *newcliaddr) {
         char buf[20];
         inet_ntop(AF_INET, &newcliaddr->sin_addr, buf, sizeof(buf));
-        printf("new client : %s\n", buf);
-        clisock_list[num_chat] = s;
+        printf("\n\t\t새로운 참가자 -->  ");
+	clisock_list[num_chat] = s;
         num_chat++;
 }
 void removeClient(int i) {
@@ -187,8 +220,18 @@ void removeClient(int i) {
                 clisock_list[i] = clisock_list[num_chat-1];
         }
         num_chat--;
-        printf("채팅 참가자 1명 탈퇴. 현재 참가수 = %d\n", num_chat);
+	printf("\n\t\t\t 한명이 게임을 나갔습니다. \n\n\t\t 현재 게임에 남아있는 참가자 수%d명입니다.\n\n",num_chat);
 }
+
+
+/*
+- non-blocking 모드 : 통신 상대가 여럿이거나 여러 가지 작업을 병행하려면 nonblocking 또는 비동기 모드를 사용하여야 한다.
+- 비동기 : 순서없이 신호를 보내고 받는다 
+- 네트워크가 즉시 처리할 수 있으면 해당 결과를 리턴 ( 대신 신뢰성 떨어짐 )
+- 리턴값을 대게 -1, false를 리턴
+- 결과 확인을 위한 반복적인 작업(폴링)으로 CPU낭비를 초래
+
+*/
 
 int is_nonblock(int sockfd) {
         int val;
@@ -229,4 +272,3 @@ int tcp_listen(int host, int port, int backlog) {
         listen(sd, backlog);
         return sd;
 }
-
